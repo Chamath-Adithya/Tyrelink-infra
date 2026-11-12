@@ -45,3 +45,4 @@ jobs:
             -v "$(pwd)/dummy_ssl/fullchain.pem:/etc/letsencrypt/live/tyrelink.lk/fullchain.pem:ro" \
             -v "$(pwd)/dummy_ssl/privkey.pem:/etc/letsencrypt/live/tyrelink.lk/privkey.pem:ro" \
             nginx:alpine nginx -t
+
