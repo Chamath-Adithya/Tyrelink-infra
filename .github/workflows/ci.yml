@@ -1,0 +1,47 @@
+name: Tyrelink Infrastructure CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  validate-infra:
+    name: Validate Configurations & Scripts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@v4
+
+      - name: Validate Shell Scripts Syntax
+        run: |
+          echo "Checking shell scripts with bash -n..."
+          for file in scripts/*.sh; do
+            if [ -f "$file" ]; then
+              echo "Validating $file..."
+              bash -n "$file"
+            fi
+          done
+          echo "All shell scripts passed syntax check."
+
+      - name: Validate Docker Compose Configuration
+        run: |
+          mkdir -p ../Tyrelink-api/migrations
+          docker compose config
+
+      - name: Validate Nginx Configuration Template
+        run: |
+          # Create dummy SSL cert files for testing syntax validity
+          mkdir -p dummy_ssl
+          openssl req -x509 -nodes -days 1 -newkey rsa:2048 \
+            -keyout dummy_ssl/privkey.pem \
+            -out dummy_ssl/fullchain.pem \
+            -subj "/CN=tyrelink.lk"
+
+          docker run --rm \
+            -v "$(pwd)/nginx/tyrelink.conf.example:/etc/nginx/conf.d/tyrelink.conf:ro" \
+            -v "$(pwd)/dummy_ssl/fullchain.pem:/etc/letsencrypt/live/tyrelink.lk/fullchain.pem:ro" \
+            -v "$(pwd)/dummy_ssl/privkey.pem:/etc/letsencrypt/live/tyrelink.lk/privkey.pem:ro" \
+            nginx:alpine nginx -t
